@@ -24,7 +24,7 @@ int distance2 = 0;
 void setup() {
   // put your setup code here, to run once:
   delay(1000);
-  
+
   Serial.begin(115200);
   mySerial.begin(9600);
   Wire.begin();
@@ -46,12 +46,18 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
+  // ultrasonic sensor
+  // measureUSS(distance1);
+  // delay(1000);
 
   // lidar sensor
   measureLDR(distance2);
   delay(1000);
+}
 
-  // ultrasonic sensor
+// measureUSS() function
+void measureUSS(float distance) {
+  // obtain sensor readings
   do {
     for (int i = 0; i < 4; i++) {
       ussData[i] = mySerial.read();
@@ -61,12 +67,15 @@ void loop() {
   mySerial.flush();
 
   if (ussData[0] == 0xff) {
+    // calculate distance
     int sum;
     sum = (ussData[0] + ussData[1] + ussData[2]) & 0x00FF;
     if (sum == ussData[3]) {
-      distance1 = (ussData[1] << 8) + ussData[2];
-      distance1 = distance1 / 10;
-      Serial.println(distance1);
+      distance = (ussData[1] << 8) + ussData[2];
+      distance = distance / 10;
+
+      // display result to OLED
+      Serial.println(distance);
       display1.clearDisplay();
       display1.setCursor(10, 0);
       display1.setTextSize(2);
@@ -74,11 +83,10 @@ void loop() {
       display1.print("Distance");
       display1.setCursor(10, 30);
       display1.setTextSize(2);
-      display1.print(String(distance1) + " cm");
+      display1.print(String(distance) + " cm");
       display1.display();
     }
   }
-  delay(1000);
 }
 
 // measureLDR() function

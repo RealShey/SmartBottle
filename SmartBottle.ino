@@ -10,8 +10,20 @@
 Adafruit_SSD1306 display1(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 Adafruit_SSD1306 display2(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
+// USS pins
 SoftwareSerial mySerial(11, 10);
 
+// button pin A -> reset count to 0
+const int buttonPinA = 4;
+int buttonPinAState;
+int lastButtonPinAState = LOW;
+
+// button pin B -> switch between sensors
+const int buttonPinB = 6;
+int buttonPinBState;
+int lastButtonPinBState = LOW;
+
+// read and write address
 const uint8_t ADDRESS = 0x74;
 
 // sensor reading storage
@@ -21,20 +33,27 @@ uint8_t dat = 0xB0;
 float distance1 = 0;
 int distance2 = 0;
 
+// debounce
+long lastDebounceTime = 0;  // the last time the output pin was toggled
+long debounceDelay = 50;
+
 void setup() {
   // put your setup code here, to run once:
   delay(1000);
+
+  pinMode(buttonPinA, INPUT);
+  pinMode(buttonPinB, INPUT);
 
   Serial.begin(115200);
   mySerial.begin(9600);
   Wire.begin();
 
   // display 1 (Ultrasonic Sensor Display)
-  // display1.begin(SSD1306_SWITCHCAPVCC, 0x3C);
-  // delay(2000);
-  // display1.clearDisplay();
-  // display1.setTextColor(WHITE);
-  // delay(1000);
+  display1.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  delay(2000);
+  display1.clearDisplay();
+  display1.setTextColor(WHITE);
+  delay(1000);
 
   // display 2 (LiDAR Rangefinder Display)
   display2.begin(SSD1306_SWITCHCAPVCC, 0x3D);
@@ -46,9 +65,40 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
+  
+  // check button pin A
+  int reading = digitalRead(buttonPinA);
+  if (reading != lastButtonPinAState) {
+    lastDebounceTime = millis();
+  }
+  if ((millis() - lastDebounceTime) > debounceDelay && reading != buttonPinAState) {
+    {
+      buttonPinAState = reading;
+      if (buttonPinState == HIGH) {
+        // do something
+      }
+    }
+  }
+  lastButtonPinAState = reading;
+
+  // check button pin B
+  reading = digitalRead(buttonPinB);
+  if (reading != lastButtonPinBState) {
+    lastDebounceTime = millis();
+  }
+  if ((millis() - lastDebounceTime) > debounceDelay && reading != buttonPinBState) {
+    {
+      buttonPinBState = reading;
+      if (buttonPinState == HIGH) {
+        // do something
+      }
+    }
+  }
+  lastButtonPinBState = reading;
+
   // ultrasonic sensor
-  // measureUSS(distance1);
-  // delay(1000);
+  measureUSS(distance1);
+  delay(1000);
 
   // lidar sensor
   measureLDR(distance2);

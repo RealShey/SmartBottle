@@ -49,18 +49,18 @@ void setup() {
   Wire.begin();
 
   // display 1 (Ultrasonic Sensor Display)
-  display1.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  display1.begin(SSD1306_SWITCHCAPVCC, 0x3D);
   delay(2000);
   display1.clearDisplay();
   display1.setTextColor(WHITE);
   delay(1000);
 
   // display 2 (LiDAR Rangefinder Display)
-  display2.begin(SSD1306_SWITCHCAPVCC, 0x3D);
-  delay(2000);
-  display2.clearDisplay();
-  display2.setTextColor(WHITE);
-  delay(1000);
+  // display2.begin(SSD1306_SWITCHCAPVCC, 0x3D);
+  // delay(2000);
+  // display2.clearDisplay();
+  // display2.setTextColor(WHITE);
+  // delay(1000);
 }
 
 void loop() {
@@ -74,7 +74,7 @@ void loop() {
   if ((millis() - lastDebounceTime) > debounceDelay && reading != buttonPinAState) {
     {
       buttonPinAState = reading;
-      if (buttonPinState == HIGH) {
+      if (buttonPinAState == HIGH) {
         // do something
       }
     }
@@ -89,7 +89,7 @@ void loop() {
   if ((millis() - lastDebounceTime) > debounceDelay && reading != buttonPinBState) {
     {
       buttonPinBState = reading;
-      if (buttonPinState == HIGH) {
+      if (buttonPinBState == HIGH) {
         // do something
       }
     }
@@ -101,8 +101,8 @@ void loop() {
   delay(1000);
 
   // lidar sensor
-  measureLDR(distance2);
-  delay(1000);
+  // measureLDR(distance2);
+  // delay(1000);
 }
 
 // measureUSS() function
@@ -127,15 +127,30 @@ void measureUSS(float distance) {
       // display result to OLED
       Serial.println(distance);
       display1.clearDisplay();
+      delay(1000);
       display1.setCursor(10, 0);
       display1.setTextSize(2);
       display1.setTextColor(WHITE);
-      display1.print("Distance");
+      display1.print("Distance1");
       display1.setCursor(10, 30);
       display1.setTextSize(2);
       display1.print(String(distance) + " cm");
       display1.display();
     }
+  }
+  else {
+    // display result to OLED
+      Serial.println(distance);
+      display1.clearDisplay();
+      delay(1000);
+      display1.setCursor(10, 0);
+      display1.setTextSize(2);
+      display1.setTextColor(WHITE);
+      display1.print("ERROR");
+      display1.setCursor(10, 30);
+      display1.setTextSize(2);
+      display1.print(String(distance) + " cm");
+      display1.display();
   }
 }
 

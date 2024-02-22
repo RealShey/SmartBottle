@@ -8,10 +8,10 @@
 #define SCREEN_HEIGHT 64
 #define OLED_RESET -1
 Adafruit_SSD1306 display1(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-Adafruit_SSD1306 display2(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+// Adafruit_SSD1306 display2(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 // USS pins
-SoftwareSerial mySerial(11, 10);
+SoftwareSerial mySerial(11, 10);  // RX, TX
 
 // button pin A -> reset count to 0
 const int buttonPinA = 4;
@@ -27,11 +27,10 @@ int lastButtonPinBState = LOW;
 const uint8_t ADDRESS = 0x74;
 
 // sensor reading storage
-unsigned char ussData[4] = {};
+unsigned char data[4] = {};
 uint8_t buf[2] = { 0 };
 uint8_t dat = 0xB0;
-float distance1 = 0;
-int distance2 = 0;
+float distance;
 
 // debounce
 long lastDebounceTime = 0;  // the last time the output pin was toggled
@@ -39,12 +38,11 @@ long debounceDelay = 50;
 
 void setup() {
   // put your setup code here, to run once:
-  delay(1000);
 
   pinMode(buttonPinA, INPUT);
   pinMode(buttonPinB, INPUT);
 
-  Serial.begin(115200);
+  Serial.begin(57600);
   mySerial.begin(9600);
   Wire.begin();
 
@@ -65,7 +63,7 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  
+
   // check button pin A
   int reading = digitalRead(buttonPinA);
   if (reading != lastButtonPinAState) {
@@ -97,66 +95,74 @@ void loop() {
   lastButtonPinBState = reading;
 
   // ultrasonic sensor
-  measureUSS(distance1);
-  delay(1000);
+  // measureUSS();
 
   // lidar sensor
-  // measureLDR(distance2);
-  // delay(1000);
+  // measureLDR();
 }
 
 // measureUSS() function
-void measureUSS(float distance) {
+void measureUSS() {
   // obtain sensor readings
   do {
     for (int i = 0; i < 4; i++) {
-      ussData[i] = mySerial.read();
+      data[i] = mySerial.read();
     }
   } while (mySerial.read() == 0xff);
 
   mySerial.flush();
 
-  if (ussData[0] == 0xff) {
+  if (data[0] == 0xff) {
     // calculate distance
     int sum;
-    sum = (ussData[0] + ussData[1] + ussData[2]) & 0x00FF;
-    if (sum == ussData[3]) {
-      distance = (ussData[1] << 8) + ussData[2];
-      distance = distance / 10;
+    sum = (data[0] + data[1] + data[2]) & 0x00FF;
+    if (sum == data[3]) {
+      distance = (data[1] << 8) + data[2];
+      if (distance > 30) {
+        Serial.print("distance=");
+        Serial.print(distance);
+        Serial.println("mm");
 
-      // display result to OLED
-      Serial.println(distance);
-      display1.clearDisplay();
-      delay(1000);
-      display1.setCursor(10, 0);
-      display1.setTextSize(2);
-      display1.setTextColor(WHITE);
-      display1.print("Distance1");
-      display1.setCursor(10, 30);
-      display1.setTextSize(2);
-      display1.print(String(distance) + " cm");
-      display1.display();
-    }
+
+        // ALEX
+        //
+        // insert distance to volume calculation here:
+        //
+
+
+        // display to OLED
+        display1.clearDisplay();
+        display1.setCursor(10, 0);
+        display1.setTextSize(2);
+        display1.setTextColor(WHITE);
+        display1.print("USS Dist.");
+        display1.setCursor(10, 30);
+        display1.setTextSize(2);
+        display1.print(String(distance) + " mm");
+        display1.display();
+      } else {
+        Serial.println("Below the lower limit");
+
+        // display to OLED
+        display1.clearDisplay();
+        display1.setCursor(10, 0);
+        display1.setTextSize(2);
+        display1.setTextColor(WHITE);
+        display1.print("USS Dist.");
+        display1.setCursor(10, 30);
+        display1.setTextSize(2);
+        display1.print("Low Limit");
+        display1.display();
+      }
+    } else Serial.println("ERROR");
   }
-  else {
-    // display result to OLED
-      Serial.println(distance);
-      display1.clearDisplay();
-      delay(1000);
-      display1.setCursor(10, 0);
-      display1.setTextSize(2);
-      display1.setTextColor(WHITE);
-      display1.print("ERROR");
-      display1.setCursor(10, 30);
-      display1.setTextSize(2);
-      display1.print(String(distance) + " cm");
-      display1.display();
-  }
+  delay(100);
 }
 
 // measureLDR() function
-void measureLDR(int distance) {
+void measureLDR() {
   // obtain sensor readings
+  int distance;
   writeReg(0x10, &dat, 1);
   delay(50);
   readReg(0x02, buf, 2);
@@ -164,17 +170,42 @@ void measureLDR(int distance) {
   // calculate distance
   distance = buf[0] * 0x100 + buf[1] + 10;
 
-  // display result to OLED
-  Serial.println(distance);
-  display2.clearDisplay();
-  display2.setCursor(10, 0);
-  display2.setTextSize(2);
-  display2.setTextColor(WHITE);
-  display2.print("Distance2");
-  display2.setCursor(10, 30);
-  display2.setTextSize(2);
-  display2.print(String(distance) + " mm");
-  display2.display();
+  if (distance > 30) {
+    Serial.print("distance=");
+    Serial.print(distance);
+    Serial.println("mm");
+
+
+    // ALEX
+    //
+    // insert distance to volume calculation here:
+    //
+
+
+    // display to OLED
+    display1.clearDisplay();
+    display1.setCursor(10, 0);
+    display1.setTextSize(2);
+    display1.setTextColor(WHITE);
+    display1.print("LDR Dist.");
+    display1.setCursor(10, 30);
+    display1.setTextSize(2);
+    display1.print(String(distance) + " mm");
+    display1.display();
+  } else {
+    Serial.println("Below the lower limit");
+
+    // display to OLED
+    display1.clearDisplay();
+    display1.setCursor(10, 0);
+    display1.setTextSize(2);
+    display1.setTextColor(WHITE);
+    display1.print("LDR Dist.");
+    display1.setCursor(10, 30);
+    display1.setTextSize(2);
+    display1.print("Low Limit");
+    display1.display();
+  }
   delay(100);
 }
 

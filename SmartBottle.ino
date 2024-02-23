@@ -13,12 +13,13 @@ Adafruit_SSD1306 display1(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 // USS pins
 SoftwareSerial mySerial(11, 10);  // RX, TX
 
-// button pin A -> reset count to 0
+// button pin A -> switch between sensors
 const int buttonPinA = 4;
 int buttonPinAState;
 int lastButtonPinAState = LOW;
+int sensorState = 1;
 
-// button pin B -> switch between sensors
+// button pin B -> reset to system to 0
 const int buttonPinB = 6;
 int buttonPinBState;
 int lastButtonPinBState = LOW;
@@ -73,7 +74,8 @@ void loop() {
     {
       buttonPinAState = reading;
       if (buttonPinAState == HIGH) {
-        // do something
+        // switch between sensors
+        sensorState = -sensorState;
       }
     }
   }
@@ -94,11 +96,15 @@ void loop() {
   }
   lastButtonPinBState = reading;
 
-  // ultrasonic sensor
-  // measureUSS();
 
-  // lidar sensor
-  // measureLDR();
+  if (sensorState == 1) {
+    // ultrasonic sensor
+    measureUSS();
+  }
+  if (sensorState == -1) {
+    // lidar sensor
+    measureLDR();
+  }
 }
 
 // measureUSS() function

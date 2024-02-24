@@ -8,7 +8,6 @@
 #define SCREEN_HEIGHT 64
 #define OLED_RESET -1
 Adafruit_SSD1306 display1(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-// Adafruit_SSD1306 display2(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 // USS pins
 SoftwareSerial mySerial(11, 10);  // RX, TX
@@ -54,12 +53,6 @@ void setup() {
   display1.setTextColor(WHITE);
   delay(1000);
 
-  // display 2 (LiDAR Rangefinder Display)
-  // display2.begin(SSD1306_SWITCHCAPVCC, 0x3D);
-  // delay(2000);
-  // display2.clearDisplay();
-  // display2.setTextColor(WHITE);
-  // delay(1000);
 }
 
 void loop() {
@@ -96,6 +89,7 @@ void loop() {
   }
   lastButtonPinBState = reading;
 
+  Serial.println(sensorState);
 
   if (sensorState == 1) {
     // ultrasonic sensor

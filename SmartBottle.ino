@@ -128,7 +128,7 @@ void measureUSS() {
         //
         // insert distance to volume calculation here:
         //
-
+      convertDistancesToVolume(distance);
 
         // display to OLED
         display1.clearDisplay();
@@ -246,4 +246,11 @@ bool writeReg(uint8_t reg, const void* pBuf, size_t size) {
   } else {
     return 1;
   }
+}
+float convertDistancesToVolume(float distance) {
+  // Replace this with your actual conversion formula
+  // This is a placeholder, adjust as needed
+  float radius = 2.5;  // Replace with your cylinder's radius in centimeters
+  float CurrentVolume = PI * radius * radius *(distance);
+  return CurrentVolume;
 }

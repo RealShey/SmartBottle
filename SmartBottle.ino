@@ -18,10 +18,15 @@ int buttonPinAState;
 int lastButtonPinAState = LOW;
 int sensorState = 1;
 
-// button pin B -> reset to system to 0
-const int buttonPinB = 6;
+// button pin B -> set volume goal or reset to system to 0
+const int buttonPinB = 5;
 int buttonPinBState;
 int lastButtonPinBState = LOW;
+
+// button pin C -> increment volume goal
+const int buttonPinC = 6;
+int buttonPinCState;
+int lastButtonPinCState = LOW;
 
 // read and write address
 const uint8_t ADDRESS = 0x74;
@@ -52,7 +57,6 @@ void setup() {
   display1.clearDisplay();
   display1.setTextColor(WHITE);
   delay(1000);
-
 }
 
 void loop() {
@@ -88,6 +92,21 @@ void loop() {
     }
   }
   lastButtonPinBState = reading;
+
+  // check button pin C
+  int reading = digitalRead(buttonPinC);
+  if (reading != lastButtonPinCState) {
+    lastDebounceTime = millis();
+  }
+  if ((millis() - lastDebounceTime) > debounceDelay && reading != buttonPinCState) {
+    {
+      buttonPinCState = reading;
+      if (buttonPinCState == HIGH) {
+        // do something
+      }
+    }
+  }
+  lastButtonPinCState = reading;
 
   Serial.println(sensorState);
 
@@ -128,7 +147,7 @@ void measureUSS() {
         //
         // insert distance to volume calculation here:
         //
-      convertDistancesToVolume(distance);
+        float out = convertDistancesToVolume(distance);
 
         // display to OLED
         display1.clearDisplay();
@@ -138,7 +157,7 @@ void measureUSS() {
         display1.print("USS Dist.");
         display1.setCursor(10, 30);
         display1.setTextSize(2);
-        display1.print(String(distance) + " mm");
+        display1.print(String(out) + " mL");
         display1.display();
       } else {
         Serial.println("Below the lower limit");
@@ -251,6 +270,6 @@ float convertDistancesToVolume(float distance) {
   // Replace this with your actual conversion formula
   // This is a placeholder, adjust as needed
   float radius = 2.5;  // Replace with your cylinder's radius in centimeters
-  float CurrentVolume = PI * radius * radius *(distance);
+  float CurrentVolume = PI * radius * radius * (distance);
   return CurrentVolume;
 }

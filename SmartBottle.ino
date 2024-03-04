@@ -266,10 +266,26 @@ bool writeReg(uint8_t reg, const void* pBuf, size_t size) {
     return 1;
   }
 }
+
+
 float convertDistancesToVolume(float distance) {
   // Replace this with your actual conversion formula
   // This is a placeholder, adjust as needed
   float radius = 2.5;  // Replace with your cylinder's radius in centimeters
   float CurrentVolume = PI * radius * radius * (distance);
   return CurrentVolume;
+}
+
+float calcVolumePoured(float curVolume, float lastVolume, float &totalVolume) {
+  // Calculate the running total of volume poured out,
+  // but not volume poured in
+
+  if (curVolume >= (lastVolume * 1.05)) {
+    lastVolume = curVolume;
+  }
+  if (curVolume <= (lastVolume * 0.95)) {
+    totalVolume = totalVolume + (lastVolume - curVolume);
+    lastVolume = curVolume;
+  }
+  return lastVolume;
 }

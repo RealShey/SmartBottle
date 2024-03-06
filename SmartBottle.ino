@@ -37,6 +37,11 @@ uint8_t buf[2] = { 0 };
 uint8_t dat = 0xB0;
 float distance;
 
+// volume variables
+float lastVolume = 0;
+float curVolume = 0;
+float* totVolume = 0;
+
 // debounce
 long lastDebounceTime = 0;  // the last time the output pin was toggled
 long debounceDelay = 50;
@@ -144,7 +149,7 @@ void measureUSS() {
         Serial.println("oz");
 
         // convert distance reading to volume measurement
-        float out = convertDistancesToVolume(distance);
+        curVolume = convertDistancesToVolume(distance);
 
 
         // Miguel add yours here
@@ -278,7 +283,7 @@ float convertDistancesToVolume(float distance) {
 }
 
 
-float calcVolumePoured(float curVolume, float lastVolume, float totalVolume) {
+float calcVolumePoured(float curVolume, float lastVolume, float &totalVolume) {
   // Calculate the running total of volume poured out,
   // but not volume poured in
 

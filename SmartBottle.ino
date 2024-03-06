@@ -94,7 +94,7 @@ void loop() {
   lastButtonPinBState = reading;
 
   // check button pin C
-  int reading = digitalRead(buttonPinC);
+  reading = digitalRead(buttonPinC);
   if (reading != lastButtonPinCState) {
     lastDebounceTime = millis();
   }
@@ -140,7 +140,7 @@ void measureUSS() {
       if (distance > 30) {
         Serial.print("distance=");
         Serial.print(distance);
-        Serial.println("mm");
+        Serial.println("oz");
 
 
         // ALEX
@@ -157,7 +157,7 @@ void measureUSS() {
         display1.print("USS Dist.");
         display1.setCursor(10, 30);
         display1.setTextSize(2);
-        display1.print(String(out) + " mL");
+        display1.print(String(out) + " oz");
         display1.display();
       } else {
         Serial.println("Below the lower limit");
@@ -199,6 +199,7 @@ void measureLDR() {
     //
     // insert distance to volume calculation here:
     //
+     float out = convertDistancesToVolume(distance);
 
 
     // display to OLED
@@ -209,7 +210,7 @@ void measureLDR() {
     display1.print("LDR Dist.");
     display1.setCursor(10, 30);
     display1.setTextSize(2);
-    display1.print(String(distance) + " mm");
+    display1.print(String(out) + " oz");
     display1.display();
   } else {
     Serial.println("Below the lower limit");
@@ -269,10 +270,10 @@ bool writeReg(uint8_t reg, const void* pBuf, size_t size) {
 
 
 float convertDistancesToVolume(float distance) {
-  // Replace this with your actual conversion formula
-  // This is a placeholder, adjust as needed
-  float radius = 2.5;  // Replace with your cylinder's radius in centimeters
-  float CurrentVolume = PI * radius * radius * (distance);
+  float radius = 36.83;
+  float distanceWater = (PI * radius * radius * (distance)) * 0.00003381;
+  float totVolume = 30.02;
+  float CurrentVolume = totVolume - distanceWater;
   return CurrentVolume;
 }
 

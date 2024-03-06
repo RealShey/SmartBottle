@@ -120,6 +120,7 @@ void loop() {
   }
 }
 
+
 // measureUSS() function
 void measureUSS() {
   // obtain sensor readings
@@ -142,12 +143,13 @@ void measureUSS() {
         Serial.print(distance);
         Serial.println("oz");
 
-
-        // ALEX
-        //
-        // insert distance to volume calculation here:
-        //
+        // convert distance reading to volume measurement
         float out = convertDistancesToVolume(distance);
+
+
+        // Miguel add yours here
+
+
 
         // display to OLED
         display1.clearDisplay();
@@ -178,6 +180,7 @@ void measureUSS() {
   delay(100);
 }
 
+
 // measureLDR() function
 void measureLDR() {
   // obtain sensor readings
@@ -194,13 +197,8 @@ void measureLDR() {
     Serial.print(distance);
     Serial.println("mm");
 
-
-    // ALEX
-    //
-    // insert distance to volume calculation here:
-    //
-     float out = convertDistancesToVolume(distance);
-
+    // convert distance reading to volume measurement
+    float out = convertDistancesToVolume(distance);
 
     // display to OLED
     display1.clearDisplay();
@@ -229,6 +227,7 @@ void measureLDR() {
   delay(100);
 }
 
+
 // readReg() function
 // code provided by (SEN0590) datasheet
 uint8_t readReg(uint8_t reg, const void* pBuf, size_t size) {
@@ -248,6 +247,7 @@ uint8_t readReg(uint8_t reg, const void* pBuf, size_t size) {
   }
   return size;
 }
+
 
 // writeReg() function
 // code provided by LiDAR (SEN0590) datasheet
@@ -277,7 +277,8 @@ float convertDistancesToVolume(float distance) {
   return CurrentVolume;
 }
 
-float calcVolumePoured(float curVolume, float lastVolume, float &totalVolume) {
+
+float calcVolumePoured(float curVolume, float lastVolume, float totalVolume) {
   // Calculate the running total of volume poured out,
   // but not volume poured in
 

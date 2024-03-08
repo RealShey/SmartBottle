@@ -40,7 +40,8 @@ float distance;
 // volume variables
 float lastVolume = 0;
 float curVolume = 0;
-float* totVolume = 0;
+float totVolume = 0;
+float maxVolume = 0;
 
 // debounce
 long lastDebounceTime = 0;  // the last time the output pin was toggled
@@ -153,6 +154,23 @@ void measureUSS() {
 
 
         // Miguel add yours here
+        if(totVolume >= maxVolume){
+           display1.clearDisplay();
+           display1.setCursor(10, 0);
+           display1.setTextSize(2);
+           display1.setTextColor(WHITE);
+           display1.print("Goal Reached!");
+           display1.display();
+        } else {
+           display1.clearDisplay();
+           display1.setCursor(10, 0);
+           display1.setTextSize(2);
+           display1.setTextColor(WHITE);
+           display1.print("Water Drank:");
+           display1.print(totVolume);
+           display1.print("oz");
+           display1.display();
+        }
 
 
 
@@ -164,7 +182,7 @@ void measureUSS() {
         display1.print("USS Dist.");
         display1.setCursor(10, 30);
         display1.setTextSize(2);
-        display1.print(String(out) + " oz");
+        display1.print(String(curVolume) + " oz");
         display1.display();
       } else {
         Serial.println("Below the lower limit");
@@ -203,7 +221,25 @@ void measureLDR() {
     Serial.println("mm");
 
     // convert distance reading to volume measurement
-    float out = convertDistancesToVolume(distance);
+    float curVolume = convertDistancesToVolume(distance);
+
+     if(totVolume >= maxVolume){
+           display1.clearDisplay();
+           display1.setCursor(10, 0);
+           display1.setTextSize(2);
+           display1.setTextColor(WHITE);
+           display1.print("Goal Reached!");
+           display1.display();
+        } else {
+           display1.clearDisplay();
+           display1.setCursor(10, 0);
+           display1.setTextSize(2);
+           display1.setTextColor(WHITE);
+           display1.print("Water Drank:");
+           display1.print(totVolume);
+           display1.print("oz");
+           display1.display();
+        }
 
     // display to OLED
     display1.clearDisplay();
@@ -213,7 +249,7 @@ void measureLDR() {
     display1.print("LDR Dist.");
     display1.setCursor(10, 30);
     display1.setTextSize(2);
-    display1.print(String(out) + " oz");
+    display1.print(String(curVolume) + " oz");
     display1.display();
   } else {
     Serial.println("Below the lower limit");
@@ -296,3 +332,10 @@ float calcVolumePoured(float curVolume, float lastVolume, float &totalVolume) {
   }
   return lastVolume;
 }
+
+
+
+
+
+
+

@@ -52,6 +52,7 @@ void setup() {
 
   pinMode(buttonPinA, INPUT);
   pinMode(buttonPinB, INPUT);
+  pinMode(buttonPinC, INPUT);
 
   Serial.begin(57600);
   mySerial.begin(9600);
@@ -109,6 +110,10 @@ void loop() {
       buttonPinCState = reading;
       if (buttonPinCState == HIGH) {
         // do something
+         maxVolume += 2.0; // Increment by 2 oz 
+        Serial.print("Water goal: ");
+        Serial.print(maxVolume);
+        Serial.println(" oz");
       }
     }
   }

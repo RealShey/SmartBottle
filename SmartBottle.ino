@@ -13,18 +13,18 @@ Adafruit_SSD1306 display1(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 SoftwareSerial mySerial(11, 10);  // RX, TX
 
 // button pin A -> switch between sensors
-const int buttonPinA = 4;
+const int buttonPinA = 5;
 int buttonPinAState;
 int lastButtonPinAState = LOW;
 int sensorState = 1;
 
 // button pin B -> set volume goal or reset to system to 0
-const int buttonPinB = 5;
+const int buttonPinB = 4;
 int buttonPinBState;
 int lastButtonPinBState = LOW;
 
 // button pin C -> increment volume goal
-const int buttonPinC = 6;
+const int buttonPinC = 3;
 int buttonPinCState;
 int lastButtonPinCState = LOW;
 
@@ -94,7 +94,9 @@ void loop() {
     {
       buttonPinBState = reading;
       if (buttonPinBState == HIGH) {
-        // do something
+        // reset to system to 0
+        maxVolume = 0;
+        totVolume = 0;
       }
     }
   }
@@ -109,8 +111,8 @@ void loop() {
     {
       buttonPinCState = reading;
       if (buttonPinCState == HIGH) {
-        // do something
-         maxVolume += 2.0; // Increment by 2 oz 
+        // increment volume goal
+        maxVolume += 2.0;  // Increment by 2 oz
         Serial.print("Water goal: ");
         Serial.print(maxVolume);
         Serial.println(" oz");
@@ -121,16 +123,17 @@ void loop() {
 
   Serial.println(sensorState);
 
-  if (sensorState == 1) {
-    // ultrasonic sensor
-    measureUSS();
-  }
-  if (sensorState == -1) {
-    // lidar sensor
-    measureLDR();
+  if (maxVolume != 0) {
+    if (sensorState == -1) {
+      // ultrasonic sensor
+      measureUSS();
+    }
+    if (sensorState == 1) {
+      // lidar sensor
+      measureLDR();
+    }
   }
 }
-
 
 // measureUSS() function
 void measureUSS() {
@@ -152,43 +155,44 @@ void measureUSS() {
       if (distance > 30) {
         Serial.print("distance=");
         Serial.print(distance);
-        Serial.println("oz");
+        Serial.println("mm");
 
         // convert distance reading to volume measurement
         curVolume = convertDistancesToVolume(distance);
+        Serial.print("curVolume=");
+        Serial.print(curVolume);
+        Serial.println("oz");
 
+        // calculate total based on current and last
+        if (curVolume >= (lastVolume * 1.05)) {
+          lastVolume = curVolume;
+        }
+        if (curVolume <= (lastVolume * 0.95)) {
+          totVolume = totVolume + (lastVolume - curVolume);
+          lastVolume = curVolume;
+        }
+        Serial.print("totVolume=");
+        Serial.print(totVolume);
+        Serial.println("oz");
 
         // Miguel add yours here
-        if(totVolume >= maxVolume){
-           display1.clearDisplay();
-           display1.setCursor(10, 0);
-           display1.setTextSize(2);
-           display1.setTextColor(WHITE);
-           display1.print("Goal Reached!");
-           display1.display();
+        if (totVolume >= maxVolume) {
+          display1.clearDisplay();
+          display1.setCursor(10, 0);
+          display1.setTextSize(2);
+          display1.setTextColor(WHITE);
+          display1.print("Goal Reached!");
+          display1.display();
         } else {
-           display1.clearDisplay();
-           display1.setCursor(10, 0);
-           display1.setTextSize(2);
-           display1.setTextColor(WHITE);
-           display1.print("Water Drank:");
-           display1.print(totVolume);
-           display1.print("oz");
-           display1.display();
+          display1.clearDisplay();
+          display1.setCursor(10, 0);
+          display1.setTextSize(2);
+          display1.setTextColor(WHITE);
+          display1.print("Water Drank:");
+          display1.print(totVolume);
+          display1.print("oz");
+          display1.display();
         }
-
-
-
-        // display to OLED
-        display1.clearDisplay();
-        display1.setCursor(10, 0);
-        display1.setTextSize(2);
-        display1.setTextColor(WHITE);
-        display1.print("USS Dist.");
-        display1.setCursor(10, 30);
-        display1.setTextSize(2);
-        display1.print(String(curVolume) + " oz");
-        display1.display();
       } else {
         Serial.println("Below the lower limit");
 
@@ -226,36 +230,40 @@ void measureLDR() {
     Serial.println("mm");
 
     // convert distance reading to volume measurement
-    float curVolume = convertDistancesToVolume(distance);
+    curVolume = convertDistancesToVolume(distance);
+    Serial.print("curVolume=");
+    Serial.print(curVolume);
+    Serial.println("oz");
 
-     if(totVolume >= maxVolume){
-           display1.clearDisplay();
-           display1.setCursor(10, 0);
-           display1.setTextSize(2);
-           display1.setTextColor(WHITE);
-           display1.print("Goal Reached!");
-           display1.display();
-        } else {
-           display1.clearDisplay();
-           display1.setCursor(10, 0);
-           display1.setTextSize(2);
-           display1.setTextColor(WHITE);
-           display1.print("Water Drank:");
-           display1.print(totVolume);
-           display1.print("oz");
-           display1.display();
-        }
+    // calculate total based on current and last
+    if (curVolume >= (lastVolume * 1.05)) {
+      lastVolume = curVolume;
+    }
+    if (curVolume <= (lastVolume * 0.95)) {
+      totVolume = totVolume + (lastVolume - curVolume);
+      lastVolume = curVolume;
+    }
+    Serial.print("totVolume=");
+    Serial.print(totVolume);
+    Serial.println("oz");
 
-    // display to OLED
-    display1.clearDisplay();
-    display1.setCursor(10, 0);
-    display1.setTextSize(2);
-    display1.setTextColor(WHITE);
-    display1.print("LDR Dist.");
-    display1.setCursor(10, 30);
-    display1.setTextSize(2);
-    display1.print(String(curVolume) + " oz");
-    display1.display();
+    if (totVolume >= maxVolume) {
+      display1.clearDisplay();
+      display1.setCursor(10, 0);
+      display1.setTextSize(2);
+      display1.setTextColor(WHITE);
+      display1.print("Goal Reached!");
+      display1.display();
+    } else {
+      display1.clearDisplay();
+      display1.setCursor(10, 0);
+      display1.setTextSize(2);
+      display1.setTextColor(WHITE);
+      display1.print("Water Drank:");
+      display1.print(totVolume);
+      display1.print("oz");
+      display1.display();
+    }
   } else {
     Serial.println("Below the lower limit");
 
@@ -314,33 +322,14 @@ bool writeReg(uint8_t reg, const void* pBuf, size_t size) {
   }
 }
 
-
+// convertDistancesToVolume() function
 float convertDistancesToVolume(float distance) {
   float radius = 36.83;
   float distanceWater = (PI * radius * radius * (distance)) * 0.00003381;
   float totVolume = 30.02;
   float CurrentVolume = totVolume - distanceWater;
+  if (CurrentVolume < 0) {
+    CurrentVolume = 0;
+  }
   return CurrentVolume;
 }
-
-
-float calcVolumePoured(float curVolume, float lastVolume, float &totalVolume) {
-  // Calculate the running total of volume poured out,
-  // but not volume poured in
-
-  if (curVolume >= (lastVolume * 1.05)) {
-    lastVolume = curVolume;
-  }
-  if (curVolume <= (lastVolume * 0.95)) {
-    totalVolume = totalVolume + (lastVolume - curVolume);
-    lastVolume = curVolume;
-  }
-  return lastVolume;
-}
-
-
-
-
-
-
-

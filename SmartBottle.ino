@@ -28,7 +28,7 @@ const int buttonPinC = 3;
 int buttonPinCState;
 int lastButtonPinCState = LOW;
 
-// read and write address
+// read and write address for LiDAR
 const uint8_t ADDRESS = 0x74;
 
 // sensor reading storage
@@ -105,13 +105,14 @@ void loop() {
   Serial.println(sensorState);
 
   if (maxVolume != 0) {
-    if (sensorState == -1) {
+    if (sensorState == 1) {
       // ultrasonic sensor
       measureUSS();
     }
-    if (sensorState == 1) {
+    if (sensorState == -1) {
       // lidar sensor
       measureLDR();
+      delay(1000);
     }
   }
 }
@@ -133,7 +134,7 @@ void measureUSS() {
     sum = (data[0] + data[1] + data[2]) & 0x00FF;
     if (sum == data[3]) {
       distance = (data[1] << 8) + data[2];
-      if (distance > 30) {
+      if (distance > 30 && distance < 240) {
         Serial.print("distance=");
         Serial.print(distance);
         Serial.println("mm");
@@ -145,10 +146,10 @@ void measureUSS() {
         Serial.println("oz");
 
         // calculate total based on current and last
-        if (curVolume >= (lastVolume * 1.05)) {
+        if (curVolume >= (lastVolume * 1.25)) {
           lastVolume = curVolume;
         }
-        if (curVolume <= (lastVolume * 0.95)) {
+        if (curVolume <= (lastVolume * 0.75)) {
           totVolume = totVolume + (lastVolume - curVolume);
           lastVolume = curVolume;
         }
@@ -205,7 +206,7 @@ void measureLDR() {
   // calculate distance
   distance = buf[0] * 0x100 + buf[1] + 10;
 
-  if (distance > 30) {
+  if (distance > 30 && distance < 240) {
     Serial.print("distance=");
     Serial.print(distance);
     Serial.println("mm");
@@ -217,10 +218,10 @@ void measureLDR() {
     Serial.println("oz");
 
     // calculate total based on current and last
-    if (curVolume >= (lastVolume * 1.05)) {
+    if (curVolume >= (lastVolume * 1.25)) {
       lastVolume = curVolume;
     }
-    if (curVolume <= (lastVolume * 0.95)) {
+    if (curVolume <= (lastVolume * 0.75)) {
       totVolume = totVolume + (lastVolume - curVolume);
       lastVolume = curVolume;
     }
@@ -246,7 +247,7 @@ void measureLDR() {
       display1.display();
     }
   } else {
-    Serial.println("Below the lower limit");
+    Serial.println("Limit");
 
     // display to OLED
     display1.clearDisplay();
@@ -256,7 +257,7 @@ void measureLDR() {
     display1.print("LDR Dist.");
     display1.setCursor(10, 30);
     display1.setTextSize(2);
-    display1.print("Low Limit");
+    display1.print("Limit");
     display1.display();
   }
   delay(100);
@@ -307,7 +308,7 @@ bool writeReg(uint8_t reg, const void* pBuf, size_t size) {
 float convertDistancesToVolume(float distance) {
   float radius = 31.75;
   float distanceWater = (PI * radius * radius * (distance)) * 0.00003381;
-  float totVolume = 24.00;
+  float totVolume = 24.50;
   float CurrentVolume = totVolume - distanceWater;
   if (CurrentVolume < 0) {
     CurrentVolume = 0;

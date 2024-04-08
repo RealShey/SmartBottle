@@ -48,8 +48,8 @@ long lastDebounceTime = 0;  // the last time the output pin was toggled
 long debounceDelay = 50;
 
 void setup() {
-  // put your setup code here, to run once:
-
+  delay(1000);
+  // set button pin mode as inputs
   pinMode(buttonPinA, INPUT);
   pinMode(buttonPinB, INPUT);
   pinMode(buttonPinC, INPUT);
@@ -67,56 +67,39 @@ void setup() {
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-
   // check button pin A
   int reading = digitalRead(buttonPinA);
-  if (reading != lastButtonPinAState) {
-    lastDebounceTime = millis();
-  }
-  if ((millis() - lastDebounceTime) > debounceDelay && reading != buttonPinAState) {
-    {
-      buttonPinAState = reading;
-      if (buttonPinAState == HIGH) {
-        // switch between sensors
-        sensorState = -sensorState;
-      }
+  if (reading != buttonPinAState) {
+    buttonPinAState = reading;
+    if (buttonPinAState == HIGH) {
+      // switch between sensors
+      sensorState = -sensorState;
     }
   }
   lastButtonPinAState = reading;
 
   // check button pin B
   reading = digitalRead(buttonPinB);
-  if (reading != lastButtonPinBState) {
-    lastDebounceTime = millis();
-  }
-  if ((millis() - lastDebounceTime) > debounceDelay && reading != buttonPinBState) {
-    {
-      buttonPinBState = reading;
-      if (buttonPinBState == HIGH) {
-        // reset to system to 0
-        maxVolume = 0;
-        totVolume = 0;
-      }
+  if (reading != buttonPinBState) {
+    buttonPinBState = reading;
+    if (buttonPinBState == HIGH) {
+      // reset to system to 0
+      maxVolume = 0;
+      totVolume = 0;
     }
   }
   lastButtonPinBState = reading;
 
   // check button pin C
   reading = digitalRead(buttonPinC);
-  if (reading != lastButtonPinCState) {
-    lastDebounceTime = millis();
-  }
-  if ((millis() - lastDebounceTime) > debounceDelay && reading != buttonPinCState) {
-    {
-      buttonPinCState = reading;
-      if (buttonPinCState == HIGH) {
-        // increment volume goal
-        maxVolume += 2.0;  // Increment by 2 oz
-        Serial.print("Water goal: ");
-        Serial.print(maxVolume);
-        Serial.println(" oz");
-      }
+  if (reading != buttonPinCState) {
+    buttonPinCState = reading;
+    if (buttonPinCState == HIGH) {
+      // increment volume goal
+      maxVolume += 2.0;  // Increment by 2 oz
+      Serial.print("Water goal: ");
+      Serial.print(maxVolume);
+      Serial.println(" oz");
     }
   }
   lastButtonPinCState = reading;
@@ -324,9 +307,9 @@ bool writeReg(uint8_t reg, const void* pBuf, size_t size) {
 
 // convertDistancesToVolume() function
 float convertDistancesToVolume(float distance) {
-  float radius = 36.83;
+  float radius = 31.75;
   float distanceWater = (PI * radius * radius * (distance)) * 0.00003381;
-  float totVolume = 30.02;
+  float totVolume = 24.00;
   float CurrentVolume = totVolume - distanceWater;
   if (CurrentVolume < 0) {
     CurrentVolume = 0;

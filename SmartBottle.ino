@@ -43,22 +43,20 @@ float curVolume = 0;
 float totVolume = 0;
 float maxVolume = 0;
 
-// debounce
-long lastDebounceTime = 0;  // the last time the output pin was toggled
-long debounceDelay = 50;
-
 void setup() {
   delay(1000);
+
   // set button pin mode as inputs
   pinMode(buttonPinA, INPUT);
   pinMode(buttonPinB, INPUT);
   pinMode(buttonPinC, INPUT);
 
+  // initialize serial communications
   Serial.begin(57600);
   mySerial.begin(9600);
   Wire.begin();
 
-  // display 1 (Ultrasonic Sensor Display)
+  // display 1
   display1.begin(SSD1306_SWITCHCAPVCC, 0x3D);
   delay(2000);
   display1.clearDisplay();
@@ -96,7 +94,7 @@ void loop() {
     buttonPinCState = reading;
     if (buttonPinCState == HIGH) {
       // increment volume goal
-      maxVolume += 2.0;  // Increment by 2 oz
+      maxVolume += 8.0;  // Increment by 8 oz
       Serial.print("Water goal: ");
       Serial.print(maxVolume);
       Serial.println(" oz");

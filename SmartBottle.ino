@@ -1,7 +1,18 @@
+// general libraries
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <SoftwareSerial.h>
+
+// LED strip declerations
+#include <Adafruit_NeoPixel.h>
+#ifdef __AVR__
+#include <avr/power.h>
+#endif
+#define PIXELPIN 6
+#define NUMPIXELS 17
+Adafruit_NeoPixel pixels(NUMPIXELS, PIXELPIN, NEO_GRB + NEO_KHZ800);
+#define DELAYVAL 10
 
 // OLED display definitions
 #define SCREEN_WIDTH 128
@@ -41,7 +52,8 @@ float distance;
 float lastVolume = 0;
 float curVolume = 0;
 float totVolume = 0;
-float maxVolume = 0;
+float maxVolume = 1;
+float Ratio = totVolume / maxVolume + 0.000001;
 
 void setup() {
   delay(1000);
@@ -62,6 +74,11 @@ void setup() {
   display1.clearDisplay();
   display1.setTextColor(WHITE);
   delay(1000);
+
+#if defined(__AVR_ATtiny85__) && (F_CPU == 16000000)
+  clock_prescale_set(clock_div_1);
+#endif
+  pixels.begin();
 }
 
 void loop() {
@@ -82,7 +99,7 @@ void loop() {
     buttonPinBState = reading;
     if (buttonPinBState == HIGH) {
       // reset to system to 0
-      maxVolume = 0;
+      maxVolume = 1;
       totVolume = 0;
     }
   }
@@ -104,7 +121,7 @@ void loop() {
 
   Serial.println(sensorState);
 
-  if (maxVolume != 0) {
+  if (maxVolume > 1) {
     if (sensorState == 1) {
       // ultrasonic sensor
       measureUSS();
@@ -112,8 +129,8 @@ void loop() {
     if (sensorState == -1) {
       // lidar sensor
       measureLDR();
-      delay(1000);
     }
+    //lightPixels(Ratio);
   }
 }
 
@@ -134,7 +151,7 @@ void measureUSS() {
     sum = (data[0] + data[1] + data[2]) & 0x00FF;
     if (sum == data[3]) {
       distance = (data[1] << 8) + data[2];
-      if (distance > 30 && distance < 240) {
+      if (distance > 30 && distance < 250) {
         Serial.print("distance=");
         Serial.print(distance);
         Serial.println("mm");
@@ -206,7 +223,7 @@ void measureLDR() {
   // calculate distance
   distance = buf[0] * 0x100 + buf[1] + 10;
 
-  if (distance > 30 && distance < 240) {
+  if (distance > 30 && distance < 250) {
     Serial.print("distance=");
     Serial.print(distance);
     Serial.println("mm");
@@ -304,6 +321,7 @@ bool writeReg(uint8_t reg, const void* pBuf, size_t size) {
   }
 }
 
+
 // convertDistancesToVolume() function
 float convertDistancesToVolume(float distance) {
   float radius = 31.75;
@@ -314,4 +332,79 @@ float convertDistancesToVolume(float distance) {
     CurrentVolume = 0;
   }
   return CurrentVolume;
+}
+
+
+// lightPixels() function
+void lightPixels(float Ratio) {
+  pixels.clear();
+
+  if (Ratio < .066) {
+    pixels.setPixelColor(0, pixels.Color(255, 0, 0));
+    pixels.show();
+    delay(DELAYVAL);
+  }
+
+  else if (Ratio >= .066 && Ratio < .132) {
+    pixels.setPixelColor(1, pixels.Color(255, 0, 0));
+    pixels.show();
+    delay(DELAYVAL);
+  } else if (Ratio >= .132 && Ratio < .198) {
+    pixels.setPixelColor(2, pixels.Color(255, 0, 0));
+    pixels.show();
+    delay(DELAYVAL);
+  } else if (Ratio >= .198 && Ratio < .264) {
+    pixels.setPixelColor(3, pixels.Color(255, 0, 0));
+    pixels.show();
+    delay(DELAYVAL);
+  } else if (Ratio >= .264 && Ratio < .33) {
+    pixels.setPixelColor(4, pixels.Color(255, 0, 0));
+    pixels.show();
+    delay(DELAYVAL);
+  } else if (Ratio >= .33 && Ratio < .396) {
+    pixels.setPixelColor(5, pixels.Color(0, 0, 255));
+    pixels.show();
+    delay(DELAYVAL);
+  } else if (Ratio >= .396 && Ratio < .462) {
+    pixels.setPixelColor(6, pixels.Color(0, 0, 255));
+    pixels.show();
+    delay(DELAYVAL);
+  } else if (Ratio >= .462 && Ratio < .528) {
+    pixels.setPixelColor(7, pixels.Color(0, 0, 255));
+    pixels.show();
+    delay(DELAYVAL);
+  } else if (Ratio >= .528 && Ratio < .594) {
+    pixels.setPixelColor(8, pixels.Color(0, 0, 255));
+    pixels.show();
+    delay(DELAYVAL);
+  } else if (Ratio >= .594 && Ratio < .66) {
+    pixels.setPixelColor(9, pixels.Color(0, 0, 255));
+    pixels.show();
+    delay(DELAYVAL);
+  } else if (Ratio >= .66 && Ratio < .726) {
+    pixels.setPixelColor(10, pixels.Color(0, 255, 0));
+    pixels.show();
+    delay(DELAYVAL);
+  } else if (Ratio >= .726 && Ratio < .792) {
+    pixels.setPixelColor(11, pixels.Color(0, 255, 0));
+    pixels.show();
+    delay(DELAYVAL);
+  } else if (Ratio >= .792 && Ratio < .858) {
+    pixels.setPixelColor(12, pixels.Color(0, 255, 0));
+    pixels.show();
+    delay(DELAYVAL);
+  } else if (Ratio >= .858 && Ratio < .924) {
+    pixels.setPixelColor(13, pixels.Color(0, 255, 0));
+    pixels.show();
+    delay(DELAYVAL);
+  } else if (Ratio >= .924 && Ratio < .99) {
+    pixels.setPixelColor(14, pixels.Color(0, 255, 0));
+    pixels.show();
+    delay(DELAYVAL);
+  } else if (Ratio >= 1) {
+    pixels.setPixelColor(15, pixels.Color(255, 255, 255));
+    pixels.show();
+    delay(DELAYVAL);
+  } else {
+  }
 }

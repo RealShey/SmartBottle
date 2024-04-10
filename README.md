@@ -1,5 +1,7 @@
 # SmartBottle
- Senior Design Project
 
-Hey gents, I'm putting this on GitHub so we can all share/work on the same code file.
-Remember to fetch the lastest commit before trying to push your work!
+ Class: ECE 397 Senior Design II
+ Semsester: Spring 2024
+ Authors: Shey Brown, Alexander Acosta, Miguel Barrera, Brayan Suarez
+
+ This program is used in Sierra's (Group 13's) senior design project, the Sierra Smart Bottle.

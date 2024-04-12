@@ -3,8 +3,9 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <SoftwareSerial.h>
+#include <MedianFilterLib.h>
 
-// LED strip declerations
+// LED strip definitions
 #include <Adafruit_NeoPixel.h>
 #ifdef __AVR__
 #include <avr/power.h>
@@ -18,6 +19,7 @@ Adafruit_NeoPixel pixels(NUMPIXELS, PIXELPIN, NEO_GRB + NEO_KHZ800);
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
 #define OLED_RESET -1
+#define GREEN 0x07E0
 Adafruit_SSD1306 display1(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 // USS pins
@@ -47,7 +49,6 @@ const uint8_t ADDRESS = 0x74;
 unsigned char data[4] = {};
 uint8_t buf[2] = { 0 };
 uint8_t dat = 0xB0;
-float distance;
 
 // volume variables
 float lastVolume = 0;
@@ -55,26 +56,32 @@ float curVolume = 0;
 float totVolume = 0;
 float maxVolume = 0;
 
+// median filter algortithm
+MedianFilter<float> medianFilter(5);
+float median = 0;
+
 void setup() {
   delay(1000);
 
-  // set button pin mode as inputs
+  // set button pin modes
   pinMode(buttonPinA, INPUT);
   pinMode(buttonPinB, INPUT);
   pinMode(buttonPinC, INPUT);
 
-  // initialize serial communications
+  // begin serial communications
   Serial.begin(115200);
   mySerial.begin(9600);
   Wire.begin();
 
-  // display 1
+  // initialize OLED display
   display1.begin(SSD1306_SWITCHCAPVCC, 0x3D);
   delay(2000);
   display1.clearDisplay();
   display1.setTextColor(WHITE);
+  display1.display();
   delay(1000);
 
+// initialize LED strip
 #if defined(__AVR_ATtiny85__) && (F_CPU == 16000000)
   clock_prescale_set(clock_div_1);
 #endif
@@ -109,11 +116,8 @@ void loop() {
   if (reading != buttonPinCState) {
     buttonPinCState = reading;
     if (buttonPinCState == HIGH) {
-      // increment volume goal
-      maxVolume += 8.0;  // Increment by 8 oz
-      Serial.print(F("Water goal: "));
-      Serial.print(maxVolume);
-      Serial.println(F(" oz"));
+      // increment volume goal by 8oz
+      maxVolume += 8.0;
     }
   }
   lastButtonPinCState = reading;
@@ -133,151 +137,43 @@ void loop() {
 }
 
 // measureUSS() function
+// read data being sent by USS
 void measureUSS() {
   // obtain sensor readings
+  float distance;
   do {
     for (int i = 0; i < 4; i++) {
       data[i] = mySerial.read();
     }
   } while (mySerial.read() == 0xff);
-
   mySerial.flush();
 
+  // calculate distance
   if (data[0] == 0xff) {
-    // calculate distance
     int sum;
     sum = (data[0] + data[1] + data[2]) & 0x00FF;
     if (sum == data[3]) {
       distance = (data[1] << 8) + data[2];
-      if (distance > 30 && distance < 270) {
-        Serial.print(F("distance="));
-        Serial.print(distance);
-        Serial.println(F("mm"));
-
-        // convert distance reading to volume measurement
-        curVolume = convertDistancesToVolume(distance);
-        Serial.print(F("curVolume="));
-        Serial.print(curVolume);
-        Serial.println(F("oz"));
-
-        // calculate total based on current and last
-        if (curVolume >= (lastVolume * 1.25)) {
-          lastVolume = curVolume;
-        }
-        if (curVolume <= (lastVolume * 0.75)) {
-          totVolume = totVolume + (lastVolume - curVolume);
-          lastVolume = curVolume;
-        }
-        Serial.print(F("totVolume="));
-        Serial.print(totVolume);
-        Serial.println(F("oz"));
-
-        float Ratio = totVolume / (maxVolume + 1);
-        lightPixels(Ratio);
-
-        display1.clearDisplay();
-        display1.setCursor(10, 0);
-        display1.setTextSize(2);
-        display1.setTextColor(WHITE);
-        display1.print(F("You Drank"));
-        display1.print(totVolume);
-        display1.print(F("oz"));
-        display1.display();
-        if (totVolume >= maxVolume) {
-          // display1.clearDisplay();
-          // display1.setCursor(32, 0);
-          // display1.setTextSize(3);
-          display1.setTextColor(WHITE);
-          display1.print(F("Goal!"));
-          display1.display();
-        }
-      } else {
-        Serial.println(F("Limit"));
-
-        // display to OLED
-        display1.clearDisplay();
-        display1.setCursor(10, 0);
-        display1.setTextSize(2);
-        display1.setTextColor(WHITE);
-        display1.print(F("USS Dist."));
-        display1.setCursor(10, 30);
-        display1.setTextSize(2);
-        display1.print(F("Limit"));
-        display1.display();
-      }
-    } else Serial.println(F("ERROR"));
+      displayMeas(distance, "USS");
+    }
+    delay(100);
   }
-  delay(100);
 }
 
 
 // measureLDR() function
+// read data being sent by LiDAR
 void measureLDR() {
   // obtain sensor readings
-  int distance;
+  float distance;
   writeReg(0x10, &dat, 1);
   delay(50);
   readReg(0x02, buf, 2);
 
   // calculate distance
   distance = buf[0] * 0x100 + buf[1] + 10;
+  displayMeas(distance, "LDR");
 
-  if (distance > 30 && distance < 220) {
-    Serial.print(F("distance="));
-    Serial.print(distance);
-    Serial.println(F("mm"));
-
-    // convert distance reading to volume measurement
-    curVolume = convertDistancesToVolume(distance);
-    Serial.print(F("curVolume="));
-    Serial.print(curVolume);
-    Serial.println(F("oz"));
-
-    // calculate total based on current and last
-    if (curVolume >= (lastVolume * 1.50)) {
-      lastVolume = curVolume;
-    }
-    if (curVolume <= (lastVolume * 0.50)) {
-      totVolume = totVolume + (lastVolume - curVolume);
-      lastVolume = curVolume;
-    }
-    Serial.print(F("totVolume="));
-    Serial.print(totVolume);
-    Serial.println(F("oz"));
-
-    float Ratio = totVolume / (maxVolume + 1);
-    lightPixels(Ratio);
-
-    display1.clearDisplay();
-    display1.setCursor(10, 0);
-    display1.setTextSize(2);
-    display1.setTextColor(WHITE);
-    display1.print(F("You Drank"));
-    display1.print(totVolume);
-    display1.print(F("oz"));
-    display1.display();
-    if (totVolume >= maxVolume) {
-      // display1.clearDisplay();
-      // display1.setCursor(32, 0);
-      // display1.setTextSize(3);
-      display1.setTextColor(WHITE);
-      display1.print(F("Goal!"));
-      display1.display();
-    }
-  } else {
-    Serial.println(F("Limit"));
-
-    // display to OLED
-    display1.clearDisplay();
-    display1.setCursor(10, 0);
-    display1.setTextSize(2);
-    display1.setTextColor(WHITE);
-    display1.print(F("LDR Dist."));
-    display1.setCursor(10, 30);
-    display1.setTextSize(2);
-    display1.print(F("Limit"));
-    display1.display();
-  }
   delay(100);
 }
 
@@ -323,12 +219,77 @@ bool writeReg(uint8_t reg, const void* pBuf, size_t size) {
 }
 
 
+// displayMeas() function
+// takes in distance and displays volume measurements
+void displayMeas(float distance, char* sensor) {
+  if (distance > 30 && distance < 250) {
+    Serial.print(F("distance="));
+    Serial.print(distance);
+    Serial.println(F("mm"));
+
+    // convert distance reading to volume measurement
+    curVolume = medianFilter.AddValue(convertDistancesToVolume(distance));
+    Serial.print(F("curVolume="));
+    Serial.print(curVolume);
+    Serial.println(F("oz"));
+
+    // calculate total based on current and last
+    if (curVolume >= (lastVolume * 1.25)) {
+      lastVolume = curVolume;
+    }
+    if (curVolume <= (lastVolume * 0.75)) {
+      totVolume = totVolume + (lastVolume - curVolume);
+      lastVolume = curVolume;
+    }
+    Serial.print(F("totVolume="));
+    Serial.print(totVolume);
+    Serial.println(F("oz"));
+
+    // light LED strip according to goal progress
+    float ratio = totVolume / (maxVolume + 1);
+    lightPixels(ratio);
+
+    // display info to OLED
+    display1.clearDisplay();
+    display1.setTextSize(1);
+    display1.setTextColor(WHITE);
+    // line 1
+    display1.setCursor(0, 0);
+    display1.print(F("Sensor: "));
+    display1.print(sensor);
+    // line 2
+    display1.setCursor(0, 25);
+    display1.print(F("Volume: "));
+    display1.print(curVolume);
+    display1.print(F("oz"));
+    // line 3
+    display1.setCursor(0, 50);
+    display1.print(F("Total/Goal: "));
+    if (totVolume >= maxVolume) {
+      display1.setTextColor(GREEN);
+    }
+    display1.print(totVolume);
+    display1.print(F("/"));
+    display1.print(maxVolume);
+    display1.print(F("oz"));
+
+    display1.display();
+  } else {
+    Serial.println(F("Limit"));
+  }
+}
+
+
 // convertDistancesToVolume() function
+// takes in distance and returns volume
 float convertDistancesToVolume(float distance) {
+  // bottle measurements and data conversions
   float radius = 31.75;
   float distanceWater = (PI * radius * radius * (distance)) * 0.00003381;
   float totVolume = 24.50;
   float CurrentVolume = totVolume - distanceWater;
+
+  // throw out negative readings (ERRORS)
   if (CurrentVolume < 0) {
     CurrentVolume = 0;
   }
@@ -337,83 +298,84 @@ float convertDistancesToVolume(float distance) {
 
 
 // lightPixels() function
-void lightPixels(float Ratio) {
-  if (Ratio < .066) {
+// takes in volume ratio and lights LED strip
+void lightPixels(float ratio) {
+  if (ratio < .066) {
     pixels.setPixelColor(0, pixels.Color(255, 0, 0));
     pixels.show();
     delay(DELAYVAL);
   }
-  if (Ratio >= .066) {
+  if (ratio >= .066) {
     pixels.setPixelColor(1, pixels.Color(255, 0, 0));
     pixels.show();
     delay(DELAYVAL);
   }
-  if (Ratio >= .132) {
+  if (ratio >= .132) {
     pixels.setPixelColor(2, pixels.Color(255, 0, 0));
     pixels.show();
     delay(DELAYVAL);
   }
-  if (Ratio >= .198) {
+  if (ratio >= .198) {
     pixels.setPixelColor(3, pixels.Color(255, 0, 0));
     pixels.show();
     delay(DELAYVAL);
   }
-  if (Ratio >= .264) {
+  if (ratio >= .264) {
     pixels.setPixelColor(4, pixels.Color(255, 0, 0));
     pixels.show();
     delay(DELAYVAL);
   }
-  if (Ratio >= .33) {
+  if (ratio >= .33) {
     pixels.setPixelColor(5, pixels.Color(0, 0, 255));
     pixels.show();
     delay(DELAYVAL);
   }
-  if (Ratio >= .396) {
+  if (ratio >= .396) {
     pixels.setPixelColor(6, pixels.Color(0, 0, 255));
     pixels.show();
     delay(DELAYVAL);
   }
-  if (Ratio >= .462) {
+  if (ratio >= .462) {
     pixels.setPixelColor(7, pixels.Color(0, 0, 255));
     pixels.show();
     delay(DELAYVAL);
   }
-  if (Ratio >= .528) {
+  if (ratio >= .528) {
     pixels.setPixelColor(8, pixels.Color(0, 0, 255));
     pixels.show();
     delay(DELAYVAL);
   }
-  if (Ratio >= .594) {
+  if (ratio >= .594) {
     pixels.setPixelColor(9, pixels.Color(0, 0, 255));
     pixels.show();
     delay(DELAYVAL);
   }
-  if (Ratio >= .66) {
+  if (ratio >= .66) {
     pixels.setPixelColor(10, pixels.Color(0, 255, 0));
     pixels.show();
     delay(DELAYVAL);
   }
-  if (Ratio >= .726) {
+  if (ratio >= .726) {
     pixels.setPixelColor(11, pixels.Color(0, 255, 0));
     pixels.show();
     delay(DELAYVAL);
   }
-  if (Ratio >= .792) {
+  if (ratio >= .792) {
     pixels.setPixelColor(12, pixels.Color(0, 255, 0));
     pixels.show();
     delay(DELAYVAL);
   }
-  if (Ratio >= .858) {
+  if (ratio >= .858) {
     pixels.setPixelColor(13, pixels.Color(0, 255, 0));
     pixels.show();
     delay(DELAYVAL);
   }
-  if (Ratio >= .924) {
+  if (ratio >= .924) {
     pixels.setPixelColor(14, pixels.Color(0, 255, 0));
     pixels.show();
     delay(DELAYVAL);
   }
-  if (Ratio >= 1) {
+  if (ratio >= 1) {
     pixels.setPixelColor(15, pixels.Color(255, 255, 255));
     pixels.show();
     delay(DELAYVAL);

@@ -13,7 +13,7 @@
 #define PIXELPIN 6
 #define NUMPIXELS 17
 Adafruit_NeoPixel pixels(NUMPIXELS, PIXELPIN, NEO_GRB + NEO_KHZ800);
-#define DELAYVAL 10
+#define DELAYVAL 0
 
 // OLED display definitions
 #define SCREEN_WIDTH 128
@@ -57,7 +57,7 @@ float totVolume = 0;
 float maxVolume = 0;
 
 // median filter algortithm
-MedianFilter<float> medianFilter(5);
+MedianFilter<float> medianFilter(7);
 float median = 0;
 
 void setup() {
@@ -86,6 +86,8 @@ void setup() {
   clock_prescale_set(clock_div_1);
 #endif
   pixels.begin();
+  delay(1000);
+  pixels.clear();
 }
 
 void loop() {
@@ -172,7 +174,7 @@ void measureLDR() {
 
   // calculate distance
   distance = buf[0] * 0x100 + buf[1] + 10;
-  displayMeas(distance, "LDR");
+  displayMeas(distance - 20, "LDR");
 
   delay(100);
 }
@@ -234,10 +236,10 @@ void displayMeas(float distance, char* sensor) {
     Serial.println(F("oz"));
 
     // calculate total based on current and last
-    if (curVolume >= (lastVolume * 1.25)) {
+    if (curVolume >= (lastVolume + 1)) {
       lastVolume = curVolume;
     }
-    if (curVolume <= (lastVolume * 0.75)) {
+    if (curVolume <= (lastVolume - 1)) {
       totVolume = totVolume + (lastVolume - curVolume);
       lastVolume = curVolume;
     }
@@ -264,7 +266,7 @@ void displayMeas(float distance, char* sensor) {
     display1.print(F("oz"));
     // line 3
     display1.setCursor(0, 50);
-    display1.print(F("Total/Goal: "));
+    display1.print(F("-> "));
     if (totVolume >= maxVolume) {
       display1.setTextColor(GREEN);
     }
@@ -284,9 +286,9 @@ void displayMeas(float distance, char* sensor) {
 // takes in distance and returns volume
 float convertDistancesToVolume(float distance) {
   // bottle measurements and data conversions
-  float radius = 31.75;
+  float radius = 31.5;
   float distanceWater = (PI * radius * radius * (distance)) * 0.00003381;
-  float totVolume = 24.50;
+  float totVolume = 24;
   float CurrentVolume = totVolume - distanceWater;
 
   // throw out negative readings (ERRORS)
@@ -300,6 +302,7 @@ float convertDistancesToVolume(float distance) {
 // lightPixels() function
 // takes in volume ratio and lights LED strip
 void lightPixels(float ratio) {
+  pixels.clear();
   if (ratio < .066) {
     pixels.setPixelColor(0, pixels.Color(255, 0, 0));
     pixels.show();
